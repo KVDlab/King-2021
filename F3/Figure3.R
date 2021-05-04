@@ -1,0 +1,64 @@
+# library
+library(ggplot2)
+library(dplyr)
+library(RColorBrewer)
+library(tidyr)
+library(ggtree)
+library(phytools)
+library(plyr)
+library(ggpubr)
+
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+#analysis groups
+Yang = c("TbraPV3","EsPV1","TbraPV1","TbraPV2","EsPV3","MscPV2")
+Yin_ = c("RfPV1","EhPV1","EdPV1","HPV41")
+other  = c("TbelPV1","HPV204","HPV1","HPV63","CcanPV1","OcPV1","SfPV1","TePV1","CPV1","LwiePV1","CcrPV1","FcaPV1","PlpPV1","UuPV1","LrPV1","PcPV1","CPV6","AmPV4","LwPV1","ElPV1","PlPV1")
+
+#data generated from python
+d1 = read.csv("../shared_data/2_PaVE.complete-genomes.fas_ratio.csv")  # read csv file
+
+#drop %CG for this analysis
+
+d1 = d1[1:17]
+
+#add group
+d1$color <- ifelse(d1$X %in% Yang, 'Yang', 
+                   ifelse (d1$X %in% Yin_,'Yin_',
+                           ifelse (d1$X %in% other, 'other', "NA")))
+d1$color <- factor(d1$color,levels = c("Yang", "Yin_", "other","NA"))
+
+
+
+#convert to long format
+d2 <- reshape(d1, 
+        direction = "long",
+        varying = list(names(d1)[2:17]),
+        v.names = c("proportion"),
+        timevar = "dinucleotide",
+        times = c("AA","AC","AG","AT","CA","CC","CG","CT","GA","GC","GG","GT","TA","TC","TG","TT"))
+
+
+
+
+d3 = (d2 %>%
+        filter(color != "NA") %>%
+        select(X, dinucleotide, proportion, color))
+
+
+d3
+
+#build violin plot of dinucs
+violin <- ggplot(d3, aes(dinucleotide,proportion)) +
+  geom_violin() +
+  geom_jitter(height = 0, width = 0.05, size = 0.5) +
+  theme_bw() +
+  ylim(0,1.5) +
+  geom_hline(yintercept=1, linetype="dashed",color = "red")
+
+violin
+
+pdf(file="violin.pdf")
+violin
+dev.off()
+
